@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: vet
+      POSTGRES_PASSWORD: vet
+      POSTGRES_DB: vetvoice
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vet -d vetvoice"]
+      interval: 3s
+      retries: 20
+
+  backend:
+    build: .
+    env_file: .env
+    environment: &dburl
+      DATABASE_URL: postgresql+psycopg://vet:vet@db:5432/vetvoice
+    command: sh -c "cd backend && alembic upgrade head && cd .. && python -m backend.seed && uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+    ports: ["8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+
+  mcp:
+    build: .
+    env_file: .env
+    environment: *dburl
+    command: python -m mcp_server.server
+    ports: ["8001:8001"]
+    volumes: ["./secrets:/app/secrets:ro"]   # google service account json goes here
+    depends_on: [backend]
+
+  agent:
+    build: .
+    env_file: .env
+    environment:
+      BACKEND_URL: http://backend:8000
+      MCP_URL: http://mcp:8001/mcp
+    command: python -m agent.agent start
+    depends_on: [backend, mcp]
+
+  # only for the test runs:  docker compose --profile test up
+  caller-bot:
+    build: .
+    env_file: .env
+    command: python -m caller_bot.caller start
+    profiles: [test]
+
+volumes:
+  pgdata:

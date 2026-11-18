@@ -1,0 +1,33 @@
+// render: dot -Tpng -Gdpi=160 docs/architecture.dot -o docs/images/architecture.png
+digraph G {
+  rankdir=LR; bgcolor="white"; pad=0.3; nodesep=0.35; ranksep=0.55;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, color="#5b6b7a", fillcolor="#f4f6f8", penwidth=1.2];
+  edge [fontname="Helvetica", fontsize=10, color="#5b6b7a", arrowsize=0.7];
+
+  caller [label="Caller\n(phone)", shape=oval, fillcolor="#fff4e0", color="#d08a1c"];
+  twilio [label="Twilio\nToronto number\n+ Elastic SIP trunk", fillcolor="#fde8ea", color="#c4314b"];
+  lk [label="LiveKit\nSIP + room", fillcolor="#e6f0ff", color="#2f6fd6"];
+
+  subgraph cluster_agent {
+    label="VetVoice agent (LiveKit Agents)"; fontname="Helvetica-Bold"; fontsize=12; style="rounded,dashed"; color="#8a99a8";
+    vad [label="Silero VAD +\nturn detector"];
+    stt [label="Deepgram\nNova-3 STT"];
+    llm [label="Claude\nHaiku 4.5", fillcolor="#efe9ff", color="#6b4fc4"];
+    tts [label="ElevenLabs\nFlash v2.5 TTS"];
+  }
+
+  mcp [label="MCP server\n8 tools", fillcolor="#e9f7ef", color="#2e8b57"];
+  db [label="PostgreSQL\nclients, pets, appts", shape=cylinder];
+  gcal [label="Google\nCalendar"];
+  sms [label="Twilio SMS"];
+  api [label="FastAPI backend\n(calls, latency)"];
+
+  caller -> twilio -> lk [dir=both];
+  lk -> vad -> stt -> llm -> tts;
+  tts -> lk [label="audio", constraint=false];
+  llm -> mcp [label="tool calls"];
+  mcp -> db; mcp -> gcal; mcp -> sms;
+  mcp -> lk [label="SIP transfer", style=dashed, constraint=false];
+  llm -> api [style=dotted, label="per-turn metrics"];
+  api -> db [style=dotted];
+}

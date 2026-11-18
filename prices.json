@@ -1,0 +1,8 @@
+{
+  "_note": "USD list prices checked 2026-11-16, update before reporting. sources in results.md",
+  "anthropic_haiku_4_5": {"input_per_mtok": 1.00, "output_per_mtok": 5.00, "cache_read_per_mtok": 0.10, "cache_write_per_mtok": 1.25},
+  "deepgram_nova3_stream_per_min": 0.0077,
+  "elevenlabs_flash_per_1k_chars": 0.05,
+  "twilio_sip_origination_ca_local_per_min": 0.0045,
+  "livekit_per_min": 0.0
+}
